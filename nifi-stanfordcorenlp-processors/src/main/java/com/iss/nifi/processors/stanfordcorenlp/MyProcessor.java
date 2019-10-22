@@ -137,7 +137,7 @@ public class MyProcessor extends AbstractProcessor {
         String format = getAttrOrProp(FORMAT_ATTR, context, flowFile);
 
         // TODO: Update to reflect new output of analyze
-        String output = service.analyze(text, annotators, format);
+        String output = service.analyze(text, annotators);
     }
 
     private static String getAttrOrProp(final String key, final ProcessContext context, final FlowFile flowFile) {
