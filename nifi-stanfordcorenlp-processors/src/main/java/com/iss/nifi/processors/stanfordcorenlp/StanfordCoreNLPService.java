@@ -1,63 +1,55 @@
 package com.iss.nifi.processors.stanfordcorenlp;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreEntityMention;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
-import edu.stanford.nlp.pipeline.StanfordCoreNLPServer;
-import edu.stanford.nlp.sentiment.SentimentCoreAnnotations;
-import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.PropertiesUtils;
 
 public class StanfordCoreNLPService {
-  private StanfordCoreNLPServer server;
+  private final static String DEFAULT_ANNOTATORS = "tokenize,ssplit,pos,lemma,ner";
+  private StanfordCoreNLPClient client;
+  private Properties coreNLPProps;
 
-  public StanfordCoreNLPService() throws IOException {
-    this(true, null, 9000, 15000);
-  }
-
-  public StanfordCoreNLPService(boolean embeddedServer, Properties props, int port, int timeout) throws IOException {
-    if (! embeddedServer) {
-      return;
-    }
+  public StanfordCoreNLPService(Properties props) {
     if (props == null) {
       props = new Properties();
     }
-    server = new StanfordCoreNLPServer(props, port, timeout, false);
-    server.run();
-  }
-
-  public StanfordCoreNLPClient getClient(Properties props) {
-    if (props == null) {
-      props = new Properties();
+    if (props.getProperty("annotators") == null) {
+      props.setProperty("annotators", DEFAULT_ANNOTATORS);
     }
-    InetSocketAddress addr = server.getServer().get().getAddress();
-    StanfordCoreNLPClient client = new StanfordCoreNLPClient(props, "http://" + addr.getHostString(), addr.getPort());
-    return client;
+    coreNLPProps = props;
   }
 
-  public CoreDocument annotateDocument(String text, String annotators) {
-    Properties props = new Properties();
-    props.setProperty("annotators", annotators);
+  public StanfordCoreNLPService(
+      Properties clientProps, 
+      String host, 
+      int port,
+      String apiKey, 
+      String apiSecret) {
+    if (clientProps == null) {
+      clientProps = new Properties();
+    }
+    int threads = PropertiesUtils.getInt(clientProps, "threads", 1);
+    client = new StanfordCoreNLPClient(clientProps, host, port, threads, apiKey, apiSecret);
+  }
 
+  public CoreDocument annotateDocument(String text) {
     CoreDocument document;
 
-    if (server == null) {
-      StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+    if (client == null) {
+      StanfordCoreNLP pipeline = new StanfordCoreNLP(coreNLPProps);
       document = new CoreDocument(text);
       pipeline.annotate(document);
     } else {
-      StanfordCoreNLPClient pipeline = getClient(props);
-      Annotation annotation = pipeline.process(text);
+      Annotation annotation = client.process(text);
       document = new CoreDocument(annotation);
     }
 
@@ -85,7 +77,7 @@ public class StanfordCoreNLPService {
       }
     }
 
-    CoreDocument document = annotateDocument(text, "tokenize,ssplit,pos,lemma,ner");
+    CoreDocument document = annotateDocument(text);
 
     for (CoreEntityMention entityMention: document.entityMentions()) {
       String eType = entityMention.entityType();
@@ -103,17 +95,5 @@ public class StanfordCoreNLPService {
     }
 
     return output;
-  }
-  
-  public static void main(String[] args) {
-    String text = "Example Text.";
-    
-    try {
-      StanfordCoreNLPService svc = new StanfordCoreNLPService();
-      System.out.println(svc.extractEntities(text, "location,organization"));
-      System.exit(0);
-    } catch (Exception e) {
-      System.out.println("Encountered exception while analyzing text: " + e);
-    }
   }
 }
