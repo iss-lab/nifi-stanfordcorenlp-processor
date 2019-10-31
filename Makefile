@@ -1,7 +1,10 @@
 MVN = $(shell which mvn)
 export MAVEN_OPTS = -Xmx2g -Xms2g -XX:MaxPermSize=2g
 
-all: deps build
+all: build
+
+docker-build:
+	docker run -v ~/.m2/repository:/usr/share/maven/ref/repository -v $(PWD):/usr/src/app -w /usr/src/app maven:3.5.2-jdk-8-alpine /usr/src/app/docker_entrypoint.sh
 
 build:
 	$(MVN) -DskipTests compile package
@@ -12,8 +15,6 @@ deps:
 test:
 	$(MVN) test
 
-test-service:
-	cd nifi-stanfordcorenlp-processors && $(MVN) exec:java -Dexec.mainClass="com.iss.nifi.processors.stanfordcorenlp.StanfordCoreNLPService"
-
 clean:
+	$(MVN) clean
 	$(MAKE) -C models/ clean
