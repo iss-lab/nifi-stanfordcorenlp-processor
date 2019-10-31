@@ -45,9 +45,10 @@ public class StanfordCoreNLPProcessorTest {
     public void testProcessor() {
         testRunner.setProperty(StanfordCoreNLPProcessor.ENTITIES_PROPERTY, "location,organization");
         testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.['title','content']");
+        // testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.content");
 		
 		try {
-			testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.txt")));
+			testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
         }

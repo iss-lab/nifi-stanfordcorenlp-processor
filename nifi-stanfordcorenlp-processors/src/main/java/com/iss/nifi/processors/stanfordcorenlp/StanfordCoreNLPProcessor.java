@@ -20,10 +20,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -32,7 +34,9 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.nifi.annotation.behavior.ReadsAttribute;
@@ -269,15 +273,30 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
     }
 
     private String getTextFromJson(String flowFileText, String jsonPath) {
-        if (jsonPath != null && !jsonPath.isEmpty()) {
-            try {
-                LinkedHashMap<String, Object> result = JsonPath.read(flowFileText, jsonPath);
-                return result.toString();
-            } catch (Exception e) {
-                e.printStackTrace();
-                getLogger().warn("Failed to parse json using specified json path, analyzing flow file as text");
-            }   
+        if (jsonPath == null || jsonPath.isEmpty()) {
+            return flowFileText;
         }
+        
+        try {
+            Configuration conf = Configuration.builder()
+                    .options(Option.ALWAYS_RETURN_LIST).build();
+            List<String> result = JsonPath.using(conf).parse(flowFileText).read(jsonPath);
+            String combined = String.join(" ", result);
+            getLogger().info("Extracted this text from the flow file with the configured json path: " + combined);
+            return combined;
+        } catch (ClassCastException e) {
+            LinkedHashMap<String, Object> resultMap = JsonPath.read(flowFileText, jsonPath);
+            String combined = "";
+            for (String k : resultMap.keySet()) {
+                combined += " " + resultMap.get(k);
+            }
+            getLogger().info("Extracted this text from the flow file with the configured json path: " + combined);
+            return combined;
+        } catch (Exception e) {
+            e.printStackTrace();
+            getLogger().warn("Failed to parse json using specified json path, analyzing flow file as text");
+        }
+
         return flowFileText;
     }
 
