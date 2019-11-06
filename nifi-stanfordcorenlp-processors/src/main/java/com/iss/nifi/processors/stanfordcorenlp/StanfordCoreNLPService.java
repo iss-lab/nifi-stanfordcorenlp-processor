@@ -98,31 +98,27 @@ public class StanfordCoreNLPService {
     }
 
     CoreDocument document = annotateDocument(text);
-    try {
-      List<CoreEntityMention> mentions = document.entityMentions();
-      if (document.entityMentions() == null) {
-        mentions = new ArrayList<CoreEntityMention>();
-      }
 
-      for (CoreEntityMention entityMention : mentions) {
-        String eType = entityMention.entityType();
-        if (extractLocations && locationNerTagList.contains(eType)) {
-          List<String> locs = output.get("location");
-          locs.add(entityMention.text());
-          output.put("location", locs);
-          continue;
-        }
-        if (nerTagList.contains(eType)) {
-          List<String> e = output.get(eType.toLowerCase());
-          e.add(entityMention.text());
-          output.put(eType.toLowerCase(), e);
-        }
-      }
-
-      return output;
-    } catch (Exception e) {
-      System.out.println("Exception while finding mentions: " + e);
+    List<CoreEntityMention> mentions = document.entityMentions();
+    if (document.entityMentions() == null) {
+      mentions = new ArrayList<CoreEntityMention>();
     }
+
+    for (CoreEntityMention entityMention : mentions) {
+      String eType = entityMention.entityType();
+      if (extractLocations && locationNerTagList.contains(eType)) {
+        List<String> locs = output.get("location");
+        locs.add(entityMention.text());
+        output.put("location", locs);
+        continue;
+      }
+      if (nerTagList.contains(eType)) {
+        List<String> e = output.get(eType.toLowerCase());
+        e.add(entityMention.text());
+        output.put(eType.toLowerCase(), e);
+      }
+    }
+
     return output;
   }
 
