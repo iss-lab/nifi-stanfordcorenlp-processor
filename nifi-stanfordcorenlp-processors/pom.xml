@@ -19,7 +19,7 @@
     <parent>
         <groupId>com.iss.nifi</groupId>
         <artifactId>nifi-stanfordcorenlp-processor</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
 
     <artifactId>nifi-stanfordcorenlp-processors</artifactId>

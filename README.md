@@ -30,7 +30,7 @@ docker run -v ~/.m2/repository:/usr/share/maven/ref/repository -v $(PWD):/usr/sr
 
 ### Artifacts
 
-After building, your `nar` file will located at `nifi-stanfordcorenlp-nar/target/nifi-stanfordcorenlp-nar-1.0-SNAPSHOT.nar`.
+After building, your `nar` file will located at `nifi-stanfordcorenlp-nar/target/nifi-stanfordcorenlp-nar-1.0.nar`.
 
 ## Test
 
