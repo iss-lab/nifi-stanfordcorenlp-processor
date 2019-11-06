@@ -2,6 +2,10 @@
 
 This project contains a custom processor for [Apache Nifi](https://nifi.apache.org/) which implements a subset of the functionality in the [Stanford CoreNLP](https://stanfordnlp.github.io/CoreNLP/) toolkit.
 
+## Features
+
+Currently, this processor only implements the extraction of Entities from the `NER` (Named Entity Recognition) annotator. There are many other features in the CoreNLP toolkit, but they are not currently exposed in this processor. Another similar processor implements sentiment analysis, you can find it here: https://github.com/tspannhw/nifi-corenlp-processor.
+
 ## Usage
 
 ### Create Input File
