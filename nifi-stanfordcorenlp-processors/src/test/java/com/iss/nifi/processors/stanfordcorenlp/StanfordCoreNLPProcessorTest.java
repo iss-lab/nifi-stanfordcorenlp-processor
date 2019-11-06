@@ -1,80 +1,133 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * 
+ * MIT License
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
 package com.iss.nifi.processors.stanfordcorenlp;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
 
 import org.apache.nifi.util.MockFlowFile;
 import org.apache.nifi.util.TestRunner;
 import org.apache.nifi.util.TestRunners;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-
 
 public class StanfordCoreNLPProcessorTest {
 
-    private TestRunner testRunner;
-
-    @Before
-    public void init() {
-        testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
-    }
-
     @Test
     public void testProcessor() {
+        TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
+        testRunner.setThreadCount(1);
+
         testRunner.setProperty(StanfordCoreNLPProcessor.ENTITIES_PROPERTY, "location,organization");
         testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.['title','content']");
         // testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.content");
-		
-		try {
-			testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-        }
-        
-        testRunner.setValidateExpressionUsage(false);
-		testRunner.run();
-		testRunner.assertValid();
-		List<MockFlowFile> successFiles = testRunner.getFlowFilesForRelationship(StanfordCoreNLPProcessor.SUCCESS_RELATIONSHIP);
 
-		for (MockFlowFile mockFile : successFiles) {
-			try {
+        try {
+            testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.run();
+        testRunner.assertValid();
+        List<MockFlowFile> successFiles = testRunner
+                .getFlowFilesForRelationship(StanfordCoreNLPProcessor.SUCCESS_RELATIONSHIP);
+
+        for (MockFlowFile mockFile : successFiles) {
+            try {
                 System.out.println("FILE:" + new String(mockFile.toByteArray(), "UTF-8"));
                 String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
                 System.out.println("Attribute: " + attr);
-                assertNotNull( attr );
-                String output = mockFile.toString();
-				System.out.println("Output: " + output);
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
-		}
+
+                Gson gson = new Gson();
+                Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
+                assertTrue(attrJsonMap.containsKey("organization"));
+                assertTrue(attrJsonMap.containsKey("location"));
+                assertTrue(attrJsonMap.get("organization").size() == 2);
+
+                byte[] output = mockFile.toByteArray();
+                System.out.println("Output: " + output);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        testRunner.shutdown();
     }
 
-    @After
-    public void teardown() {
-        // TODO: Teardown server if running
-    }
+    @Test
+    public void testProcessorWithExternalServer() {
+        TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
+        testRunner.setThreadCount(1);
 
+        testRunner.setProperty(StanfordCoreNLPProcessor.ENTITIES_PROPERTY, "location,organization");
+        testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.['title','content']");
+        testRunner.setProperty(StanfordCoreNLPProcessor.PROPS_PROPERTY, "{\"threads\": 1}");
+        testRunner.setProperty(StanfordCoreNLPProcessor.HOST_PROPERTY, "http://localhost");
+        testRunner.setProperty(StanfordCoreNLPProcessor.PORT_PROPERTY, "9000");
+
+        try {
+            testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        testRunner.setValidateExpressionUsage(false);
+        testRunner.run();
+        testRunner.assertValid();
+        List<MockFlowFile> successFiles = testRunner
+                .getFlowFilesForRelationship(StanfordCoreNLPProcessor.SUCCESS_RELATIONSHIP);
+
+        for (MockFlowFile mockFile : successFiles) {
+            try {
+                System.out.println("FILE:" + new String(mockFile.toByteArray(), "UTF-8"));
+                String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
+                System.out.println("Attribute: " + attr);
+
+                Gson gson = new Gson();
+                Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
+                assertTrue(attrJsonMap.containsKey("organization"));
+                assertTrue(attrJsonMap.containsKey("location"));
+                assertTrue(attrJsonMap.get("organization").size() == 2);
+
+                byte[] output = mockFile.toByteArray();
+                System.out.println("Output: " + output);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        testRunner.shutdown();
+    }
 }

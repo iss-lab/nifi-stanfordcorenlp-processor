@@ -1,31 +1,38 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+ * 
+ * MIT License
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
 package com.iss.nifi.processors.stanfordcorenlp;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -59,15 +66,12 @@ import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 
-@Tags({"Stanford", "CoreNLP"})
+@Tags({ "Stanford", "CoreNLP" })
 @CapabilityDescription("Stanford CoreNLP Processor")
 @SeeAlso({})
-@ReadsAttributes({
-    @ReadsAttribute(attribute="", description=""),
-})
+@ReadsAttributes({ @ReadsAttribute(attribute = "", description = ""), })
 @WritesAttributes({
-    @WritesAttribute(attribute="output", description="The Stanford CoreNLP analysis output rendered in the configured format")
-})
+        @WritesAttribute(attribute = "output", description = "The Stanford CoreNLP analysis output rendered in the configured format") })
 public class StanfordCoreNLPProcessor extends AbstractProcessor {
     public static final String ENTITIES_ATTR = "entityTypes";
     public static final String PATH_ATTR = "path";
@@ -77,66 +81,45 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
     public static final String KEY_ATTR = "apiKey";
     public static final String SECRET_ATTR = "apiSecret";
     public static final String OUTPUT_ATTR = "output";
-	
-    public static final PropertyDescriptor ENTITIES_PROPERTY = new PropertyDescriptor
-            .Builder().name(ENTITIES_ATTR)
+
+    public static final PropertyDescriptor ENTITIES_PROPERTY = new PropertyDescriptor.Builder().name(ENTITIES_ATTR)
             .displayName("Entity Types")
-            .description("Lowercase comma separated list of NER tags to extract from text, such as: location,organization")
-            .required(true)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor PATH_PROPERTY = new PropertyDescriptor
-            .Builder().name(PATH_ATTR)
+            .description(
+                    "Lowercase comma separated list of NER tags to extract from text, such as: location,organization")
+            .required(true).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor PATH_PROPERTY = new PropertyDescriptor.Builder().name(PATH_ATTR)
             .displayName("JSON Path")
-            .description("The JSON Path (https://github.com/json-path) from incoming flow file to extract for analyzing, such as: $.['title','content'] (if not specified, flow file will be treated as plain text)")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor PROPS_PROPERTY = new PropertyDescriptor
-            .Builder().name(PROPS_ATTR)
+            .description(
+                    "The JSON Path (https://github.com/json-path) from incoming flow file to extract for analyzing, such as: $.['title','content'] (if not specified, flow file will be treated as plain text)")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor PROPS_PROPERTY = new PropertyDescriptor.Builder().name(PROPS_ATTR)
             .displayName("StanfordCoreNLP Props as JSON")
-            .description("Properties to configure the StanfordCoreNLP object or StanfordCoreNLPClient object as JSON, such as: {\"annotators\": \"ner\"}")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor HOST_PROPERTY = new PropertyDescriptor
-            .Builder().name(HOST_ATTR)
+            .description(
+                    "Properties to configure the StanfordCoreNLP object or StanfordCoreNLPClient object as JSON, such as: {\"annotators\": \"ner\"}")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor HOST_PROPERTY = new PropertyDescriptor.Builder().name(HOST_ATTR)
             .displayName("StanfordCoreNLPClient Host")
-            .description("StanfordCoreNLPClient host address, such as: http://localhost (if not specified, local processing will be performed)")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor PORT_PROPERTY = new PropertyDescriptor
-            .Builder().name(PORT_ATTR)
-            .displayName("StanfordCoreNLPClient Port")
-            .description("StanfordCoreNLPClient port, such as: 9000")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor KEY_PROPERTY = new PropertyDescriptor
-            .Builder().name(KEY_ATTR)
+            .description(
+                    "StanfordCoreNLPClient host address, such as: http://localhost (if not specified, local processing will be performed)")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor PORT_PROPERTY = new PropertyDescriptor.Builder().name(PORT_ATTR)
+            .displayName("StanfordCoreNLPClient Port").description("StanfordCoreNLPClient port, such as: 9000")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor KEY_PROPERTY = new PropertyDescriptor.Builder().name(KEY_ATTR)
             .displayName("StanfordCoreNLPClient API Key")
             .description("StanfordCoreNLPClient API Key for servers that have authentication configured, not required")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
-    public static final PropertyDescriptor SECRET_PROPERTY = new PropertyDescriptor
-            .Builder().name(SECRET_ATTR)
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+    public static final PropertyDescriptor SECRET_PROPERTY = new PropertyDescriptor.Builder().name(SECRET_ATTR)
             .displayName("StanfordCoreNLPClient API Secret")
-            .description("StanfordCoreNLPClient API Secret for servers that have authentication configured, not required")
-            .required(false)
-            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-            .build();
+            .description(
+                    "StanfordCoreNLPClient API Secret for servers that have authentication configured, not required")
+            .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
-    public static final Relationship SUCCESS_RELATIONSHIP = new Relationship.Builder()
-            .name("success")
-            .description("Successfully analyzed text")
-            .build();
+    public static final Relationship SUCCESS_RELATIONSHIP = new Relationship.Builder().name("success")
+            .description("Successfully analyzed text").build();
 
-    public static final Relationship FAILURE_RELATIONSHIP = new Relationship.Builder()
-            .name("failure")
-            .description("Failed to analyze text")
-            .build();
+    public static final Relationship FAILURE_RELATIONSHIP = new Relationship.Builder().name("failure")
+            .description("Failed to analyze text").build();
 
     private List<PropertyDescriptor> descriptors;
 
@@ -180,9 +163,9 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
     @Override
     public void onTrigger(final ProcessContext context, final ProcessSession session) throws ProcessException {
         ensureService(context);
-        
+
         FlowFile flowFile = session.get();
-        if ( flowFile == null ) {
+        if (flowFile == null) {
             flowFile = session.create();
         }
 
@@ -193,7 +176,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
             session.transfer(flowFile, FAILURE_RELATIONSHIP);
             return;
         }
-        
+
         String jsonPath = context.getProperty(PATH_ATTR).evaluateAttributeExpressions(flowFile).getValue();
         String entityTypes = context.getProperty(ENTITIES_ATTR).evaluateAttributeExpressions(flowFile).getValue();
         String text = getTextFromJson(flowFileText, jsonPath);
@@ -223,10 +206,10 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
             for (String k : entityMap.keySet()) {
                 flowFileJsonMap.put(k, entityMap.get(k));
             }
-    
+
             String entityJson = gson.toJson(entityMap);
             String finalJson = gson.toJson(flowFileJsonMap);
-    
+
             flowFile = session.putAttribute(flowFile, OUTPUT_ATTR, entityJson);
             flowFile = session.write(flowFile, new OutputStreamCallback() {
                 @Override
@@ -241,7 +224,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
             e.printStackTrace();
             getLogger().warn("Failed to generate flow file or attributes");
         }
-        
+
         session.transfer(flowFile, FAILURE_RELATIONSHIP);
     }
 
@@ -251,13 +234,13 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         session.read(flowFile, new InputStreamCallback() {
             @Override
             public void process(InputStream in) throws IOException {
-                try{
+                try {
                     String rawText = IOUtils.toString(in);
                     atomicText.set(rawText);
-                } catch(NullPointerException e) {
+                } catch (NullPointerException e) {
                     e.printStackTrace();
                     getLogger().warn("FlowFile text was null");
-                } catch(IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                     getLogger().error("FlowFile text could not be read due to IOException");
                 }
@@ -265,7 +248,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         });
 
         String text = atomicText.get();
-        if(text == null || text.isEmpty()){
+        if (text == null || text.isEmpty()) {
             return null;
         }
 
@@ -276,10 +259,9 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         if (jsonPath == null || jsonPath.isEmpty()) {
             return flowFileText;
         }
-        
+
         try {
-            Configuration conf = Configuration.builder()
-                    .options(Option.ALWAYS_RETURN_LIST).build();
+            Configuration conf = Configuration.builder().options(Option.ALWAYS_RETURN_LIST).build();
             List<String> result = JsonPath.using(conf).parse(flowFileText).read(jsonPath);
             String combined = String.join(" ", result);
             getLogger().info("Extracted this text from the flow file with the configured json path: " + combined);
@@ -316,7 +298,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
 
         int port;
         try {
-            port = context.getProperty(PORT_ATTR).asInteger();    
+            port = context.getProperty(PORT_ATTR).asInteger();
         } catch (NumberFormatException e) {
             e.printStackTrace();
             getLogger().error("Failed to read port as integer, using default 9000");
@@ -325,25 +307,25 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
 
         String key = context.getProperty(KEY_ATTR).getValue();
         String secret = context.getProperty(SECRET_ATTR).getValue();
-        
+
         service = new StanfordCoreNLPService(props, host, port, key, secret);
     }
 
     private Properties jsonToProps(String jsonProps) {
         Properties props = new Properties();
         if (jsonProps == null) {
-          return props;
+            return props;
         }
         Gson gson = new Gson();
         try {
-            Map<String, String> jsonMap = gson.fromJson(jsonProps, Map.class);
+            Map<String, Object> jsonMap = gson.fromJson(jsonProps, Map.class);
             for (String k : jsonMap.keySet()) {
-                props.setProperty(k, jsonMap.get(k));
+                props.setProperty(k, jsonMap.get(k).toString());
             }
         } catch (JsonSyntaxException e) {
             e.printStackTrace();
             getLogger().error("Failed to read json string.");
         }
         return props;
-      }
+    }
 }

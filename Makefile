@@ -1,5 +1,5 @@
 MVN = $(shell which mvn)
-export MAVEN_OPTS = -Xmx2g -Xms2g -XX:MaxPermSize=2g
+export MAVEN_OPTS = -Xmx2g -Xms2g
 
 all: build
 
@@ -9,12 +9,8 @@ docker-build:
 build:
 	$(MVN) -DskipTests compile package
 
-deps:
-	$(MAKE) -C models/
-
 test:
 	$(MVN) test
 
 clean:
 	$(MVN) clean
-	$(MAKE) -C models/ clean
