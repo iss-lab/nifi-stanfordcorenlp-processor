@@ -2,7 +2,7 @@
  * 
  * MIT License
  *
- * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
+ * Copyright (c) 2020 Institutional Shareholder Services. All other rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,11 +37,11 @@ public class StanfordCoreNLPServiceTest {
 
   @Test
   public void testExtractEntities() {
-    StanfordCoreNLPService svc = new StanfordCoreNLPService(null);
+    StanfordCoreNLPService svc = new StanfordCoreNLPService(StanfordCoreNLPService.createPipeline(null));
 
-    String text = "ALBUQUERQUE, N.M. — A worldwide film production company is expanding to Albuquerque, according to Albuquerque Business First. The company, Production Resource Group, has worked on various movie productions including \"House of Cards.\" They plan to move into a 6,000-square-foot warehouse space in northeast Albuquerque, located at 5821 Midway Park Blvd. NE. For more information, click here.";
+    final String text = "ALBUQUERQUE, N.M. — A worldwide film production company is expanding to Albuquerque, according to Albuquerque Business First. The company, Production Resource Group, has worked on various movie productions including \"House of Cards.\" They plan to move into a 6,000-square-foot warehouse space in northeast Albuquerque, located at 5821 Midway Park Blvd. NE. For more information, click here.";
 
-    Map<String, List<String>> entities = svc.extractEntities(text, "location,organization");
+    final Map<String, List<String>> entities = svc.extractEntities(text, "location,organization");
     System.out.println("Entities: " + entities);
 
     assertNotNull(entities);
@@ -52,11 +52,13 @@ public class StanfordCoreNLPServiceTest {
 
   @Test
   public void testExtractEntitiesWithServer() {
-    StanfordCoreNLPService svc = new StanfordCoreNLPService(null, "http://localhost", 9000, null, null);
+    StanfordCoreNLPService svc = new StanfordCoreNLPService(
+      StanfordCoreNLPService.createPipeline(null, "http://localhost", 9000, null, null)
+    );
 
-    String text = "ALBUQUERQUE, N.M. — A worldwide film production company is expanding to Albuquerque, according to Albuquerque Business First. The company, Production Resource Group, has worked on various movie productions including \"House of Cards.\" They plan to move into a 6,000-square-foot warehouse space in northeast Albuquerque, located at 5821 Midway Park Blvd. NE. For more information, click here.";
+    final String text = "ALBUQUERQUE, N.M. — A worldwide film production company is expanding to Albuquerque, according to Albuquerque Business First. The company, Production Resource Group, has worked on various movie productions including \"House of Cards.\" They plan to move into a 6,000-square-foot warehouse space in northeast Albuquerque, located at 5821 Midway Park Blvd. NE. For more information, click here.";
 
-    Map<String, List<String>> entities = svc.extractEntities(text, "location,organization");
+    final Map<String, List<String>> entities = svc.extractEntities(text, "location,organization");
     System.out.println("Entities: " + entities);
 
     assertNotNull(entities);

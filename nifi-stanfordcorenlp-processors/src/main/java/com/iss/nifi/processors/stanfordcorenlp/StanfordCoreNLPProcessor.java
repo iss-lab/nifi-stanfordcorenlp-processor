@@ -2,7 +2,7 @@
  * 
  * MIT License
  *
- * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
+ * Copyright (c) 2020 Institutional Shareholder Services. All other rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -65,6 +65,8 @@ import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+
+import edu.stanford.nlp.pipeline.AnnotationPipeline;
 
 @Tags({ "Stanford", "CoreNLP" })
 @CapabilityDescription("Stanford CoreNLP Processor")
@@ -157,7 +159,8 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
 
     @OnScheduled
     public void onScheduled(final ProcessContext context) throws Exception {
-        ensureService(context);
+        getLogger().debug("OnScheduled called for StanfordCoreNLPProcessor, refreshing StanfordCoreNLPService");
+        service = new StanfordCoreNLPService(createPipeline(context));
     }
 
     @Override
@@ -169,7 +172,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
             flowFile = session.create();
         }
 
-        String flowFileText = getTextFromSession(session, flowFile);
+        final String flowFileText = getTextFromSession(session, flowFile);
 
         if (flowFileText == null || flowFileText.isEmpty()) {
             getLogger().error("Empty flow file cannot be analyzed");
@@ -177,14 +180,14 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
             return;
         }
 
-        String jsonPath = context.getProperty(PATH_ATTR).evaluateAttributeExpressions(flowFile).getValue();
-        String entityTypes = context.getProperty(ENTITIES_ATTR).evaluateAttributeExpressions(flowFile).getValue();
-        String text = getTextFromJson(flowFileText, jsonPath);
+        final String jsonPath = context.getProperty(PATH_ATTR).evaluateAttributeExpressions(flowFile).getValue();
+        final String entityTypes = context.getProperty(ENTITIES_ATTR).evaluateAttributeExpressions(flowFile).getValue();
+        final String text = getTextFromJson(flowFileText, jsonPath);
         Map<String, List<String>> entityMap;
 
         try {
             entityMap = service.extractEntities(text, entityTypes);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             getLogger().error("Failed to analyze flow file text");
             session.transfer(flowFile, FAILURE_RELATIONSHIP);
@@ -193,34 +196,34 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
 
         Map<String, Object> flowFileJsonMap;
 
-        Gson gson = new Gson();
+        final Gson gson = new Gson();
         try {
             flowFileJsonMap = gson.fromJson(flowFileText, Map.class);
-        } catch (JsonSyntaxException e) {
+        } catch (final JsonSyntaxException e) {
             e.printStackTrace();
             getLogger().warn("Failed to parse flow file text as json, writing new flow file from blank json document");
             flowFileJsonMap = new HashMap<String, Object>();
         }
 
         try {
-            for (String k : entityMap.keySet()) {
+            for (final String k : entityMap.keySet()) {
                 flowFileJsonMap.put(k, entityMap.get(k));
             }
 
-            String entityJson = gson.toJson(entityMap);
-            String finalJson = gson.toJson(flowFileJsonMap);
+            final String entityJson = gson.toJson(entityMap);
+            final String finalJson = gson.toJson(flowFileJsonMap);
 
             flowFile = session.putAttribute(flowFile, OUTPUT_ATTR, entityJson);
             flowFile = session.write(flowFile, new OutputStreamCallback() {
                 @Override
-                public void process(OutputStream out) throws IOException {
+                public void process(final OutputStream out) throws IOException {
                     out.write(finalJson.getBytes());
                 }
             });
 
             session.transfer(flowFile, SUCCESS_RELATIONSHIP);
             return;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             getLogger().warn("Failed to generate flow file or attributes");
         }
@@ -228,26 +231,26 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         session.transfer(flowFile, FAILURE_RELATIONSHIP);
     }
 
-    private String getTextFromSession(final ProcessSession session, FlowFile flowFile) {
+    private String getTextFromSession(final ProcessSession session, final FlowFile flowFile) {
         final AtomicReference<String> atomicText = new AtomicReference<>();
 
         session.read(flowFile, new InputStreamCallback() {
             @Override
-            public void process(InputStream in) throws IOException {
+            public void process(final InputStream in) throws IOException {
                 try {
-                    String rawText = IOUtils.toString(in);
+                    final String rawText = IOUtils.toString(in);
                     atomicText.set(rawText);
-                } catch (NullPointerException e) {
+                } catch (final NullPointerException e) {
                     e.printStackTrace();
                     getLogger().warn("FlowFile text was null");
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     e.printStackTrace();
                     getLogger().error("FlowFile text could not be read due to IOException");
                 }
             }
         });
 
-        String text = atomicText.get();
+        final String text = atomicText.get();
         if (text == null || text.isEmpty()) {
             return null;
         }
@@ -255,26 +258,24 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         return text;
     }
 
-    private String getTextFromJson(String flowFileText, String jsonPath) {
+    private String getTextFromJson(final String flowFileText, final String jsonPath) {
         if (jsonPath == null || jsonPath.isEmpty()) {
             return flowFileText;
         }
 
         try {
-            Configuration conf = Configuration.builder().options(Option.ALWAYS_RETURN_LIST).build();
-            List<String> result = JsonPath.using(conf).parse(flowFileText).read(jsonPath);
-            String combined = String.join(" ", result);
-            getLogger().info("Extracted this text from the flow file with the configured json path: " + combined);
+            final Configuration conf = Configuration.builder().options(Option.ALWAYS_RETURN_LIST).build();
+            final List<String> result = JsonPath.using(conf).parse(flowFileText).read(jsonPath);
+            final String combined = String.join(" ", result);
             return combined;
-        } catch (ClassCastException e) {
-            LinkedHashMap<String, Object> resultMap = JsonPath.read(flowFileText, jsonPath);
+        } catch (final ClassCastException e) {
+            final LinkedHashMap<String, Object> resultMap = JsonPath.read(flowFileText, jsonPath);
             String combined = "";
-            for (String k : resultMap.keySet()) {
+            for (final String k : resultMap.keySet()) {
                 combined += " " + resultMap.get(k);
             }
-            getLogger().info("Extracted this text from the flow file with the configured json path: " + combined);
             return combined;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
             getLogger().warn("Failed to parse json using specified json path, analyzing flow file as text");
         }
@@ -282,47 +283,55 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
         return flowFileText;
     }
 
-    private void ensureService(final ProcessContext context) {
-        if (service != null) {
-            return;
-        }
-        String jsonProps = context.getProperty(PROPS_ATTR).getValue();
-        Properties props = jsonToProps(jsonProps);
-
-        String host = context.getProperty(HOST_ATTR).getValue();
-
-        if (host == null) {
-            service = new StanfordCoreNLPService(props);
-            return;
-        }
-
+    private int getPort(final ProcessContext context) {
         int port;
         try {
             port = context.getProperty(PORT_ATTR).asInteger();
-        } catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
             e.printStackTrace();
             getLogger().error("Failed to read port as integer, using default 9000");
             port = 9000;
         }
-
-        String key = context.getProperty(KEY_ATTR).getValue();
-        String secret = context.getProperty(SECRET_ATTR).getValue();
-
-        service = new StanfordCoreNLPService(props, host, port, key, secret);
+        return port;
     }
 
-    private Properties jsonToProps(String jsonProps) {
-        Properties props = new Properties();
+    private AnnotationPipeline createPipeline(final ProcessContext context) {
+        final String jsonProps = context.getProperty(PROPS_ATTR).getValue();
+        final Properties props = jsonToProps(jsonProps);
+        final String host = context.getProperty(HOST_ATTR).getValue();
+
+        if (host == null) {
+            return StanfordCoreNLPService.createPipeline(props);
+        }
+
+        final int port = getPort(context);
+        final String key = context.getProperty(KEY_ATTR).getValue();
+        final String secret = context.getProperty(SECRET_ATTR).getValue();
+
+        return StanfordCoreNLPService.createPipeline(props, host, port, key, secret);
+    }
+
+    private void ensureService(final ProcessContext context) {
+        if (service != null) {
+            return;
+        }
+
+        service = new StanfordCoreNLPService(createPipeline(context));
+        return;
+    }
+
+    private Properties jsonToProps(final String jsonProps) {
+        final Properties props = new Properties();
         if (jsonProps == null) {
             return props;
         }
-        Gson gson = new Gson();
+        final Gson gson = new Gson();
         try {
-            Map<String, Object> jsonMap = gson.fromJson(jsonProps, Map.class);
-            for (String k : jsonMap.keySet()) {
+            final Map<String, Object> jsonMap = gson.fromJson(jsonProps, Map.class);
+            for (final String k : jsonMap.keySet()) {
                 props.setProperty(k, jsonMap.get(k).toString());
             }
-        } catch (JsonSyntaxException e) {
+        } catch (final JsonSyntaxException e) {
             e.printStackTrace();
             getLogger().error("Failed to read json string.");
         }

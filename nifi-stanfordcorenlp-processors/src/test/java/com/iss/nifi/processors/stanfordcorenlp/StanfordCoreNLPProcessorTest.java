@@ -2,7 +2,7 @@
  * 
  * MIT License
  *
- * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
+ * Copyright (c) 2020 Institutional Shareholder Services. All other rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@ public class StanfordCoreNLPProcessorTest {
 
     @Test
     public void testProcessor() {
-        TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
+        final TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
         testRunner.setThreadCount(1);
 
         testRunner.setProperty(StanfordCoreNLPProcessor.ENTITIES_PROPERTY, "location,organization");
@@ -54,31 +54,28 @@ public class StanfordCoreNLPProcessorTest {
 
         try {
             testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
-        } catch (FileNotFoundException e) {
+        } catch (final FileNotFoundException e) {
             e.printStackTrace();
         }
 
         testRunner.setValidateExpressionUsage(false);
         testRunner.run();
         testRunner.assertValid();
-        List<MockFlowFile> successFiles = testRunner
+        final List<MockFlowFile> successFiles = testRunner
                 .getFlowFilesForRelationship(StanfordCoreNLPProcessor.SUCCESS_RELATIONSHIP);
 
-        for (MockFlowFile mockFile : successFiles) {
+        for (final MockFlowFile mockFile : successFiles) {
             try {
                 System.out.println("FILE:" + new String(mockFile.toByteArray(), "UTF-8"));
-                String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
+                final String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
                 System.out.println("Attribute: " + attr);
 
-                Gson gson = new Gson();
-                Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
+                final Gson gson = new Gson();
+                final Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
                 assertTrue(attrJsonMap.containsKey("organization"));
                 assertTrue(attrJsonMap.containsKey("location"));
                 assertTrue(attrJsonMap.get("organization").size() == 2);
-
-                byte[] output = mockFile.toByteArray();
-                System.out.println("Output: " + output);
-            } catch (UnsupportedEncodingException e) {
+            } catch (final UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
         }
@@ -88,42 +85,38 @@ public class StanfordCoreNLPProcessorTest {
 
     @Test
     public void testProcessorWithExternalServer() {
-        TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
+        final TestRunner testRunner = TestRunners.newTestRunner(StanfordCoreNLPProcessor.class);
         testRunner.setThreadCount(1);
 
         testRunner.setProperty(StanfordCoreNLPProcessor.ENTITIES_PROPERTY, "location,organization");
         testRunner.setProperty(StanfordCoreNLPProcessor.PATH_PROPERTY, "$.['title','content']");
-        testRunner.setProperty(StanfordCoreNLPProcessor.PROPS_PROPERTY, "{\"threads\": 1}");
         testRunner.setProperty(StanfordCoreNLPProcessor.HOST_PROPERTY, "http://localhost");
         testRunner.setProperty(StanfordCoreNLPProcessor.PORT_PROPERTY, "9000");
 
         try {
             testRunner.enqueue(new FileInputStream(new File("src/test/resources/test.json")));
-        } catch (FileNotFoundException e) {
+        } catch (final FileNotFoundException e) {
             e.printStackTrace();
         }
 
         testRunner.setValidateExpressionUsage(false);
         testRunner.run();
         testRunner.assertValid();
-        List<MockFlowFile> successFiles = testRunner
+        final List<MockFlowFile> successFiles = testRunner
                 .getFlowFilesForRelationship(StanfordCoreNLPProcessor.SUCCESS_RELATIONSHIP);
 
-        for (MockFlowFile mockFile : successFiles) {
+        for (final MockFlowFile mockFile : successFiles) {
             try {
                 System.out.println("FILE:" + new String(mockFile.toByteArray(), "UTF-8"));
-                String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
+                final String attr = mockFile.getAttribute(StanfordCoreNLPProcessor.OUTPUT_ATTR);
                 System.out.println("Attribute: " + attr);
 
-                Gson gson = new Gson();
-                Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
+                final Gson gson = new Gson();
+                final Map<String, List<String>> attrJsonMap = gson.fromJson(attr, Map.class);
                 assertTrue(attrJsonMap.containsKey("organization"));
                 assertTrue(attrJsonMap.containsKey("location"));
                 assertTrue(attrJsonMap.get("organization").size() == 2);
-
-                byte[] output = mockFile.toByteArray();
-                System.out.println("Output: " + output);
-            } catch (UnsupportedEncodingException e) {
+            } catch (final UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
         }

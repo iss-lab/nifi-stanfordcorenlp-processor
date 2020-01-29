@@ -2,7 +2,7 @@
  * 
  * MIT License
  *
- * Copyright (c) 2019 Institutional Shareholder Services. All other rights reserved.
+ * Copyright (c) 2020 Institutional Shareholder Services. All other rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.pipeline.AnnotationPipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreEntityMention;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
@@ -42,53 +43,25 @@ public class StanfordCoreNLPService {
   private final static String DEFAULT_ANNOTATORS = "tokenize,ssplit,pos,lemma,ner";
   private final static int DEFAULT_THREADS = 1;
 
-  private String host;
-  private int port;
-  private String apiKey;
-  private String apiSecret;
+  private final AnnotationPipeline pipeline;
 
-  private Properties coreNLPProps;
-
-  public StanfordCoreNLPService(Properties props) {
-    this(props, null, 0, null, null);
+  public StanfordCoreNLPService(final AnnotationPipeline pipeline) {
+    this.pipeline = pipeline;
   }
 
-  public StanfordCoreNLPService(Properties props, String host, int port, String apiKey, String apiSecret) {
-    coreNLPProps = sanitizeProps(props);
-    this.host = host;
-    this.port = port;
-    this.apiKey = apiKey;
-    this.apiSecret = apiSecret;
-  }
-
-  public CoreDocument annotateDocument(String text) {
-    Annotation annotation = new Annotation(text);
-
-    if (host == null) {
-      StanfordCoreNLP pipeline = new StanfordCoreNLP(coreNLPProps);
-      pipeline.annotate(annotation);
-    } else {
-      int threads = PropertiesUtils.getInt(coreNLPProps, "threads", DEFAULT_THREADS);
-      StanfordCoreNLPClient pipeline = new StanfordCoreNLPClient(coreNLPProps, host, port, threads, apiKey, apiSecret);
-      pipeline.annotate(annotation);
-    }
-
-    return new CoreDocument(annotation);
-  }
-
-  public Map<String, List<String>> extractEntities(String text, String entityTypes) {
-    String[] entityTypeList = entityTypes.split((","));
+  public Map<String, List<String>> extractEntities(final String text, final String entityTypes) {
+    final String[] entityTypeList = entityTypes.split((","));
     boolean extractLocations = false;
-    List<String> locationNerTagList = new ArrayList<String>();
+    final List<String> locationNerTagList = new ArrayList<String>();
     locationNerTagList.add("LOCATION");
     locationNerTagList.add("CITY");
     locationNerTagList.add("COUNTRY");
     locationNerTagList.add("STATE_OR_PROVINCE");
-    List<String> nerTagList = new ArrayList<String>();
+    final List<String> nerTagList = new ArrayList<String>();
 
-    Map<String, List<String>> output = new HashMap<String, List<String>>();
+    final Map<String, List<String>> output = new HashMap<String, List<String>>();
 
-    for (String tag : entityTypeList) {
+    for (final String tag : entityTypeList) {
       output.put(tag, new ArrayList<String>());
       if (tag.equals("location")) {
         extractLocations = true;
@@ -97,23 +70,25 @@ public class StanfordCoreNLPService {
       }
     }
 
-    CoreDocument document = annotateDocument(text);
+    final Annotation annotation = new Annotation(text);
+    pipeline.annotate(annotation);
+    final CoreDocument document = new CoreDocument(annotation);
 
     List<CoreEntityMention> mentions = document.entityMentions();
     if (document.entityMentions() == null) {
       mentions = new ArrayList<CoreEntityMention>();
     }
 
-    for (CoreEntityMention entityMention : mentions) {
-      String eType = entityMention.entityType();
+    for (final CoreEntityMention entityMention : mentions) {
+      final String eType = entityMention.entityType();
       if (extractLocations && locationNerTagList.contains(eType)) {
-        List<String> locs = output.get("location");
+        final List<String> locs = output.get("location");
         locs.add(entityMention.text());
         output.put("location", locs);
         continue;
       }
       if (nerTagList.contains(eType)) {
-        List<String> e = output.get(eType.toLowerCase());
+        final List<String> e = output.get(eType.toLowerCase());
         e.add(entityMention.text());
         output.put(eType.toLowerCase(), e);
       }
@@ -122,16 +97,33 @@ public class StanfordCoreNLPService {
     return output;
   }
 
-  public Properties sanitizeProps(Properties props) {
+  public static Properties sanitizeProps(Properties props) {
     if (props == null) {
       props = new Properties();
     }
     if (props.getProperty("annotators") == null) {
       props.setProperty("annotators", DEFAULT_ANNOTATORS);
     }
-    Double threads = PropertiesUtils.getDouble(props, "threads", DEFAULT_THREADS);
+    final Double threads = PropertiesUtils.getDouble(props, "threads", DEFAULT_THREADS);
     props.setProperty("threads", String.valueOf(threads.intValue()));
 
     return props;
+  }
+
+  public static int getThreads(final Properties props) {
+    final int threads = PropertiesUtils.getInt(props, "threads", DEFAULT_THREADS);
+    return threads;
+  }
+
+  public static AnnotationPipeline createPipeline(final Properties rawProps) {
+    Properties props = sanitizeProps(rawProps);
+    return new StanfordCoreNLP(props);
+  }
+
+  public static AnnotationPipeline createPipeline(final Properties rawProps, final String host, final int port, final String key,
+      final String secret) {
+    Properties props = sanitizeProps(rawProps);
+    final int threads = getThreads(props);
+    return new StanfordCoreNLPClient(props, host, port, threads, key, secret);
   }
 }
