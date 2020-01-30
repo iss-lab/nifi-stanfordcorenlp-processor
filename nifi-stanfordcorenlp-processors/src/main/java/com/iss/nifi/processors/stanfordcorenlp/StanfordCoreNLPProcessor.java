@@ -97,7 +97,7 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
     public static final PropertyDescriptor PROPS_PROPERTY = new PropertyDescriptor.Builder().name(PROPS_ATTR)
             .displayName("StanfordCoreNLP Props as JSON")
             .description(
-                    "Properties to configure the StanfordCoreNLP object or StanfordCoreNLPClient object as JSON, such as: {\"annotators\": \"ner\"}")
+                    "Properties to configure the StanfordCoreNLP object or StanfordCoreNLPClient object as JSON, such as: {\"annotators\": \"tokenize,ssplit,pos,lemma,ner\", \"threads\": 1}")
             .required(false).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
     public static final PropertyDescriptor HOST_PROPERTY = new PropertyDescriptor.Builder().name(HOST_ATTR)
             .displayName("StanfordCoreNLPClient Host")
