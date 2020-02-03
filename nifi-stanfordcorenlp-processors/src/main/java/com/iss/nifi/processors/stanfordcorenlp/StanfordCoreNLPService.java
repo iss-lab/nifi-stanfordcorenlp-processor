@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.AnnotationPipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -49,7 +50,7 @@ public class StanfordCoreNLPService {
     this.pipeline = pipeline;
   }
 
-  public Map<String, List<String>> extractEntities(final String text, final String entityTypes) {
+  public Map<String, List<String>> extractEntities(final String text, final String entityTypes) throws RuntimeException {
     final String[] entityTypeList = entityTypes.split((","));
     boolean extractLocations = false;
     final List<String> locationNerTagList = new ArrayList<String>();
@@ -72,6 +73,12 @@ public class StanfordCoreNLPService {
 
     final Annotation annotation = new Annotation(text);
     pipeline.annotate(annotation);
+
+    if (annotation.containsKey(CoreAnnotations.ExceptionAnnotation.class)) {
+      Throwable t = annotation.get(CoreAnnotations.ExceptionAnnotation.class);
+      throw new RuntimeException(t);
+    }
+
     final CoreDocument document = new CoreDocument(annotation);
 
     List<CoreEntityMention> mentions = document.entityMentions();

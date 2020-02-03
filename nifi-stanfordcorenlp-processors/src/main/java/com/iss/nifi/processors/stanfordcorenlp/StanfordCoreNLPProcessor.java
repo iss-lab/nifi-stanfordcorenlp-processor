@@ -187,9 +187,8 @@ public class StanfordCoreNLPProcessor extends AbstractProcessor {
 
         try {
             entityMap = service.extractEntities(text, entityTypes);
-        } catch (final Exception e) {
-            e.printStackTrace();
-            getLogger().error("Failed to analyze flow file text");
+        } catch (final RuntimeException e) {
+            getLogger().error("Failed to analyze flow file text, check nifi-app.log for more details. Error: " + e.getMessage());
             session.transfer(flowFile, FAILURE_RELATIONSHIP);
             return;
         }
