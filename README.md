@@ -95,7 +95,7 @@ Create a directory for custom nifi processors if it doesn't exist:
 mkdir -p $NIFI_HOME/nars/lib1
 ```
 
-Copy `nifi-stanfordcorenlp-nar-1.1.nar` to `$NIFI_HOME/nars/lib1`
+Copy `nifi-stanfordcorenlp-nar-1.2.nar` to `$NIFI_HOME/nars/lib1`
 
 Update your `$NIFI_HOME/conf/nifi.properties` to include the following:
 
@@ -141,7 +141,7 @@ docker run -v ~/.m2/repository:/usr/share/maven/ref/repository -v $(PWD):/usr/sr
 
 ### Artifacts
 
-After building, your `nar` file will located at `nifi-stanfordcorenlp-nar/target/nifi-stanfordcorenlp-nar-1.1.nar`.
+After building, your `nar` file will located at `nifi-stanfordcorenlp-nar/target/nifi-stanfordcorenlp-nar-1.2.nar`.
 
 ## Test
 
