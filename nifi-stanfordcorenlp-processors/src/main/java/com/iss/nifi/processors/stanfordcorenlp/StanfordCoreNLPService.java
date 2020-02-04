@@ -37,7 +37,6 @@ import edu.stanford.nlp.pipeline.AnnotationPipeline;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreEntityMention;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
 import edu.stanford.nlp.util.PropertiesUtils;
 
 public class StanfordCoreNLPService {
@@ -75,7 +74,7 @@ public class StanfordCoreNLPService {
     pipeline.annotate(annotation);
 
     if (annotation.containsKey(CoreAnnotations.ExceptionAnnotation.class)) {
-      Throwable t = annotation.get(CoreAnnotations.ExceptionAnnotation.class);
+      final Throwable t = annotation.get(CoreAnnotations.ExceptionAnnotation.class);
       throw new RuntimeException(t);
     }
 
@@ -117,20 +116,14 @@ public class StanfordCoreNLPService {
     return props;
   }
 
-  public static int getThreads(final Properties props) {
-    final int threads = PropertiesUtils.getInt(props, "threads", DEFAULT_THREADS);
-    return threads;
-  }
-
   public static AnnotationPipeline createPipeline(final Properties rawProps) {
-    Properties props = sanitizeProps(rawProps);
+    final Properties props = sanitizeProps(rawProps);
     return new StanfordCoreNLP(props);
   }
 
-  public static AnnotationPipeline createPipeline(final Properties rawProps, final String host, final int port, final String key,
-      final String secret) {
-    Properties props = sanitizeProps(rawProps);
-    final int threads = getThreads(props);
-    return new StanfordCoreNLPClient(props, host, port, threads, key, secret);
+  public static AnnotationPipeline createPipeline(final Properties rawProps, final String host, final int port,
+      final String key, final String secret) {
+    final Properties props = sanitizeProps(rawProps);
+    return new StanfordCoreNLPClientSimple(props, host, port, key, secret);
   }
 }
